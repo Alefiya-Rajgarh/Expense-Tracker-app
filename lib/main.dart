@@ -316,6 +316,22 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
     );
   }
 
+  // Add this method to get monthly totals
+  Map<String, double> _getMonthlyTotals(String month) {
+    double income = 0;
+    double expense = 0;
+
+    _monthlyTransactions[month]?.forEach((transaction) {
+      if (transaction.isExpense) {
+        expense += transaction.amount;
+      } else {
+        income += transaction.amount;
+      }
+    });
+
+    return {'income': income, 'expense': expense};
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,29 +360,72 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
         ],
       ),
       drawer: Drawer(
-        child: ListView(
+        child: Column(
           children: [
-            DrawerHeader(
-              child: Text('Select Month'),
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blueAccent,
+              ),
+              child: Center(
+                child: Text(
+                  'Monthly Overview',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
-            ..._monthlyTransactions.keys.map((month) {
-              return ListTile(
-                title: Text(month),
-                onTap: () {
-                  setState(() {
-                    _currentMonth = month;
-                  });
-                  Navigator.pop(context);
+            Expanded(
+              child: ListView.separated(
+                itemCount: _monthlyTransactions.keys.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final month = _monthlyTransactions.keys.elementAt(index);
+                  final totals = _getMonthlyTotals(month);
+
+                  return ListTile(
+                    tileColor:
+                        month == _currentMonth ? Colors.blue.shade50 : null,
+                    leading: const Icon(Icons.calendar_month),
+                    title: Text(
+                      month,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Income: ${currencyFormat.format(totals['income'])}',
+                          style: TextStyle(
+                              color: Colors.green.shade600, fontSize: 13),
+                        ),
+                        Text(
+                          'Expense: ${currencyFormat.format(totals['expense'])}',
+                          style: TextStyle(
+                              color: Colors.red.shade600, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      setState(() => _currentMonth = month);
+                      Navigator.pop(context);
+                    },
+                  );
                 },
-              );
-            }).toList(),
+              ),
+            ),
+            const Divider(),
             ListTile(
+              leading: const Icon(Icons.add_circle_outline),
               title: const Text('Add New Month'),
               onTap: () {
+                final newMonth = DateFormat('MMMM yyyy')
+                    .format(DateTime.now().add(const Duration(days: 30)));
                 setState(() {
-                  _currentMonth = DateFormat('MMMM yyyy')
-                      .format(DateTime.now().add(Duration(days: 30)));
-                  _monthlyTransactions[_currentMonth] = [];
+                  _currentMonth = newMonth;
+                  _monthlyTransactions[newMonth] = [];
                 });
                 Navigator.pop(context);
               },
@@ -555,8 +614,7 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                     style: TextStyle(color: color, fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    DateFormat('dd MMM yy • hh:mm a')
-                        .format(transaction.date),
+                    DateFormat('dd MMM yy • hh:mm a').format(transaction.date),
                     style: TextStyle(
                       color: color.withOpacity(0.7),
                       fontSize: 13,
