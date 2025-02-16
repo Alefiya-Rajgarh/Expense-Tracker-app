@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-// Move this to the top of the file after imports
 enum TransactionType { income, expense }
 
 void main() {
@@ -59,21 +58,15 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
   Map<String, List<Transaction>> _monthlyTransactions = {};
   String _currentMonth = DateFormat('MMMM yyyy').format(DateTime.now());
 
-  // Create a currency formatter
-  final currencyFormat = NumberFormat.currency(
-      symbol: '₹', decimalDigits: 0, locale: 'en_IN' // Indian locale formatting
-      );
+  final currencyFormat =
+      NumberFormat.currency(symbol: '₹', decimalDigits: 0, locale: 'en_IN');
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize with sample data for current month
-    _monthlyTransactions[_currentMonth] = [
-      Transaction('Salary', 4500, DateTime.now(), false),
-      Transaction('Rent', 1000, DateTime.now(), true),
-      Transaction('Groceries', 200, DateTime.now(), true),
-    ];
+    _monthlyTransactions.clear();
+    _currentMonth = DateFormat('MMMM yyyy').format(DateTime.now());
+    _monthlyTransactions[_currentMonth] = [];
     _calculateTotals();
   }
 
@@ -81,7 +74,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
     double income = 0;
     double expense = 0;
 
-    // Use current month's transactions
     _monthlyTransactions[_currentMonth]?.forEach((transaction) {
       if (transaction.isExpense) {
         expense += transaction.amount;
@@ -98,8 +90,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
 
   Map<String, double> _getSpendingData() {
     Map<String, double> spendingData = {};
-
-    // Use current month's transactions
     _monthlyTransactions[_currentMonth]
         ?.where((t) => t.isExpense)
         .forEach((transaction) {
@@ -109,7 +99,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
         ifAbsent: () => transaction.amount,
       );
     });
-
     return spendingData;
   }
 
@@ -169,12 +158,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Amount'),
-                  validator: (value) {
-                    if (value == null || double.tryParse(value) == null) {
-                      return 'Please enter valid Transaction';
-                    }
-                    return null;
-                  },
                 ),
                 Row(
                   children: [
@@ -232,7 +215,7 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                 if (_amountController.text.isEmpty ||
                     double.tryParse(_amountController.text) == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter a valid Transaction')),
+                    const SnackBar(content: Text('Please enter valid amount')),
                   );
                   return;
                 }
@@ -254,7 +237,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
       );
 
       setState(() {
-        // Add the transaction to the current month's list
         _monthlyTransactions[_currentMonth]!.add(newTransaction);
         _monthlyTransactions[_currentMonth]!
             .sort((a, b) => b.date.compareTo(a.date));
@@ -285,8 +267,9 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                   ? 'You have ${currencyFormat.format(remaining)} left to spend'
                   : 'You overspent by ${currencyFormat.format(-remaining)}',
               style: TextStyle(
-                  color: remaining >= 0 ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.bold),
+                color: remaining >= 0 ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
             )
           ],
         ),
@@ -316,7 +299,6 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
     );
   }
 
-  // Add this method to get monthly totals
   Map<String, double> _getMonthlyTotals(String month) {
     double income = 0;
     double expense = 0;
@@ -359,80 +341,7 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
           ),
         ],
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-              ),
-              child: Center(
-                child: Text(
-                  'Monthly Overview',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _monthlyTransactions.keys.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final month = _monthlyTransactions.keys.elementAt(index);
-                  final totals = _getMonthlyTotals(month);
-
-                  return ListTile(
-                    tileColor:
-                        month == _currentMonth ? Colors.blue.shade50 : null,
-                    leading: const Icon(Icons.calendar_month),
-                    title: Text(
-                      month,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Income: ${currencyFormat.format(totals['income'])}',
-                          style: TextStyle(
-                              color: Colors.green.shade600, fontSize: 13),
-                        ),
-                        Text(
-                          'Expense: ${currencyFormat.format(totals['expense'])}',
-                          style: TextStyle(
-                              color: Colors.red.shade600, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      setState(() => _currentMonth = month);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.add_circle_outline),
-              title: const Text('Add New Month'),
-              onTap: () {
-                final newMonth = DateFormat('MMMM yyyy')
-                    .format(DateTime.now().add(const Duration(days: 30)));
-                setState(() {
-                  _currentMonth = newMonth;
-                  _monthlyTransactions[newMonth] = [];
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: _buildDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -450,52 +359,127 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
     );
   }
 
-  Widget _buildTopCards() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
+  Widget _buildDrawer() {
+    return Drawer(
+      child: Column(
         children: [
-          Expanded(
-            flex: 1,
-            child: _buildDateCard(),
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Colors.blueAccent),
+            child: Center(
+              child: Text(
+                'Monthly Overview',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
           Expanded(
-            flex: 1,
-            child: _buildFinanceCard('Income', _totalIncome, Colors.green),
+            child: ListView.separated(
+              itemCount: _monthlyTransactions.keys.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final month = _monthlyTransactions.keys.elementAt(index);
+                final totals = _getMonthlyTotals(month);
+                final isCurrentMonth = month == _currentMonth;
+                final isDeletable = month != _currentMonth;
+
+                return ListTile(
+                  tileColor: isCurrentMonth ? Colors.blue.shade50 : null,
+                  leading: const Icon(Icons.calendar_month),
+                  title: Text(
+                    month,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Income: ${currencyFormat.format(totals['income'])}',
+                        style: TextStyle(
+                          color: Colors.green.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Expense: ${currencyFormat.format(totals['expense'])}',
+                        style: TextStyle(
+                          color: Colors.red.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isDeletable)
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 20),
+                          color: Colors.red.shade300,
+                          onPressed: () => _confirmDeleteMonth(context, month),
+                        ),
+                      const Icon(Icons.chevron_right, size: 20),
+                    ],
+                  ),
+                  onTap: () {
+                    setState(() => _currentMonth = month);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
           ),
-          Expanded(
-            flex: 1,
-            child: _buildFinanceCard('Expense', _totalExpense, Colors.red),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Add Next Month'),
+            onTap: _addNewMonth,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildTopCards() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Expanded(child: _buildDateCard()),
+          Expanded(
+              child: _buildFinanceCard('Income', _totalIncome, Colors.green)),
+          Expanded(
+              child: _buildFinanceCard('Expense', _totalExpense, Colors.red)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFinanceCard(String title, double amount, Color color) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                style: TextStyle(color: color, fontSize: 18),
-                textAlign: TextAlign.center,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: TextStyle(color: color, fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              currencyFormat.format(amount),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 6),
-              Text(
-                currencyFormat.format(amount),
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -550,9 +534,8 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   final categories = _getSpendingData().keys.toList();
-                  if (value.toInt() >= categories.length) {
+                  if (value.toInt() >= categories.length)
                     return const SizedBox.shrink();
-                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
@@ -563,15 +546,12 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                 },
               ),
             ),
-            leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
+            leftTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
@@ -626,19 +606,21 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                       Text(
                         currencyFormat.format(transaction.amount),
                         style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete, color: Colors.blueGrey),
+                        icon: const Icon(Icons.delete, color: Colors.blueGrey),
                         onPressed: () {
                           setState(() {
                             currentTransactions.removeAt(index);
                             _calculateTotals();
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Transaction deleted')),
+                            const SnackBar(
+                                content: Text('Transaction deleted')),
                           );
                         },
                       ),
@@ -647,6 +629,48 @@ class _FinanceHomePageState extends State<FinanceHomePage> {
                 ),
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addNewMonth() {
+    final lastDate = DateFormat('MMMM yyyy').parse(_currentMonth);
+    final newDate = DateTime(lastDate.year, lastDate.month + 1);
+    final newMonth = DateFormat('MMMM yyyy').format(newDate);
+
+    if (!_monthlyTransactions.containsKey(newMonth)) {
+      setState(() {
+        _monthlyTransactions[newMonth] = [];
+        _currentMonth = newMonth;
+      });
+    }
+  }
+
+  void _confirmDeleteMonth(BuildContext context, String month) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Month?'),
+        content:
+            Text('All transactions for $month will be permanently deleted'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _monthlyTransactions.remove(month);
+                if (_currentMonth == month) {
+                  _currentMonth = _monthlyTransactions.keys.last;
+                }
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.blueGrey)),
           ),
         ],
       ),
