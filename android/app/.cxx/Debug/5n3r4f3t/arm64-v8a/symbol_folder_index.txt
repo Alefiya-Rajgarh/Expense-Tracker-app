@@ -1,0 +1,1 @@
+C:\Users\alefi\AndroidStudioProjects\Expense_tracker\build\app\intermediates\cxx\Debug\5n3r4f3t\obj\arm64-v8a
